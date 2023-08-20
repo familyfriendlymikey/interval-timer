@@ -1,0 +1,17 @@
+{
+  "name": "interval-timer",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "imba": "^2.0.0-alpha.230",
+    "vite": "^4.4.8",
+    "vite-plugin-imba": "^0.10.3"
+  },
+  "dependencies": {
+    "google-tts-api": "^2.0.2"
+  }
+}
