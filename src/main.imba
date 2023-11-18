@@ -234,23 +234,27 @@ tag app
 					<div> total-duration
 					<div> " minutes"
 
-				if editing?
-					<textarea bind=state>
-						css s:500px bg:clear c:warm2 p:3 rd:3 ol:none bd:1px dashed blue4
+				<div>
+					css s:500px maw:80%
+						> s:100%
 
-				else
-					<%container>
-						css bd:1px solid blue4 rd:4 s:500px of:auto
+					if editing?
+						<textarea bind=state>
+							css bg:clear c:warm2 p:3 rd:3 ol:none bd:1px dashed blue4
 
-						<%lines>
-							css d:vcl
+					else
+						<%container>
+							css bd:1px solid blue4 rd:4 of:auto
 
-							for o, i in data
-								<%line @click=play(i)> o.text
-									css cursor:default w:100% px:15px py:10px
-										@hover bg:white/10
-									if o is current
-										css
-											@important c:green3
+							<%lines>
+								css d:vcl
+
+								for o, i in data
+									<%line @click=play(i)> o.text
+										css cursor:default w:100% px:15px py:10px
+											@hover bg:white/10
+										if o is current
+											css
+												@important c:green3
 
 imba.mount <app>
