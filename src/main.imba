@@ -1,20 +1,26 @@
 global css
 	* e:300ms box-sizing:border-box
-	body c:warm2 bg:warm8 ff:Arial inset:0 d:vtl p:0 m:0
-	button bg:none ol:none c:white px:8px py:5px rd:2
+	body c:warm2 bg:gray9 ff:Arial inset:0 d:vtl p:0 m:0
+	button bg:clear ol:none c:white px:8px py:5px rd:2
 		bd:none
-		@hover bg:green3/50
+		@hover bg:blue4/70
 	.buttons d:hcc g:1
 
 extend class Array
 	get sum
 		reduce(&,0) do(acc, cur) $1 + $2
+	get has
+		includes
+
+extend class String
+	get has
+		includes
 
 tag app
 
-	setup-duration = 3s
+	setup-duration = 1ms
 
-	state = imba.locals.state or """
+	@observable state = imba.locals.state or """
 	# Sitting
 	Hurdle Right 1m
 	Hurdle Left 1m
@@ -47,18 +53,18 @@ tag app
 	# Push hand with your other hand away from your body
 	Triceps Right 30s
 	Triceps Left 30s
-	Hand + Calf Right Setup 5s
-	Thumb 7s
-	Index 7s
-	Middle 7s
-	Ring 7s
-	Pinkie 7s
-	Hand + Calf Left Setup 5s
-	Thumb 7s
-	Index 7s
-	Middle 7s
-	Ring 7s
-	Pinkie 7s
+	Hand + Calf Right Setup 7s
+	Thumb 7s # nospeaktime
+	Index 7s # nospeaktime
+	Middle 7s # nospeaktime
+	Ring 7s # nospeaktime
+	Pinkie 7s # nospeaktime
+	Hand + Calf Left Setup 7s
+	Thumb 7s # nospeaktime
+	Index 7s # nospeaktime
+	Middle 7s # nospeaktime
+	Ring 7s # nospeaktime
+	Pinkie 7s # nospeaktime
 
 	# Standing
 	Towel Over Head 40s
@@ -66,17 +72,35 @@ tag app
 	Thumb Out Neck Left 10s
 	Tricep + Bend Right 20s
 	Tricep + Bend Left 20s
-	Beached Whale + Child's Pose 10m
-
 	# Hanging Back Stretch 1m
+	Beached Whale + Child's Pose 10s
 	"""
 
-	get data
-		state.split("\n").filter(do $1 and !$1.startsWith('#'))
+	@computed get data
+		let out = []
+		let all = state.split("\n")
+		for line in all
+			continue unless line
+			continue if line.startsWith '#'
+
+			let data = {}
+			let opts
+			[line, opts] = line.split(/\s*#\s*/)
+
+			if opts
+				for opt in opts..split(/\s+/)
+					data[opt] = yes
+
+			line = line.split(/\s+/)
+			data.duration = line.pop!
+			data.text = line.join(' ')
+
+			out.push data
+		out
 
 	get total-duration
-		let arr = (get-duration(line) for line in data)
-		arr.sum / 1000 / 60
+		let arr = (get-duration(o.duration) for o in data)
+		parseInt arr.sum / 1000 / 60
 
 	get elapsed
 		(Date.now! - started) / 1000
@@ -85,30 +109,24 @@ tag app
 		if setting-up?
 			setup-duration / 1000
 		else
-			get-duration(data[index]) / 1000
+			get-duration(current.duration) / 1000
 
 	get remaining
-		(duration - elapsed).toFixed(2)
+		parseInt(duration - elapsed)
 
 	def get-duration text
-		let last = text.split(" ")[-1]
-		if last.endsWith 'm'
-			parseInt(last.substring(0,last.length - 1)) * 60 * 1000
+		if text.endsWith 'm'
+			parseInt(text.substring(0,text.length - 1)) * 60 * 1000
 		else
-			parseInt(last.substring(0,last.length - 1)) * 1000
+			parseInt(text.substring(0,text.length - 1)) * 1000
 
 	get display-current
 		if setting-up?
 			"Setup"
 		else
-			current.substring(0,current.lastIndexOf(" "))
+			current.text
 
-	def speak text
-		text = text
-			.replace(/m$/, ' minute')
-			.replace(/s$/, ' second')
-			.replace(/(?= \w+ \w+$)/, ',')
-		unless /\ 1 \w+$/.test(text) then text += 's'
+	def speak text, o
 		global.speechSynthesis.cancel!
 		global.speechSynthesis.speak(new SpeechSynthesisUtterance(text))
 
@@ -144,7 +162,15 @@ tag app
 			current = data[index]
 			imba.commit!
 
-			speak(current)
+			let tospeak = (current.text + ' ' + current.duration)
+				.replace(/m$/, ' minute')
+				.replace(/s$/, ' second')
+				.replace(/(?= \w+ \w+$)/, ',')
+			unless /\ 1 \w+$/.test(tospeak) then tospeak += 's'
+			if current.nospeaktime
+				tospeak = current.text
+
+			speak(tospeak)
 
 			timer = new Promise do(resolve, reject)
 				next = resolve
@@ -157,18 +183,19 @@ tag app
 				cancel = do
 					clearTimeout timeout
 					reject!
-				timeout = setTimeout(next,get-duration(data[index]))
+				timeout = setTimeout(next,get-duration(current.duration))
 
 			try
 				await timer
-			catch
+			catch e
+				console.error e
 				break
 
 			index += 1
 
 		stop!
 
-	<self autorender=10ms>
+	<self autorender=100ms>
 		css d:vcc s:100%
 
 		<%top>
@@ -182,12 +209,12 @@ tag app
 				else
 					<.buttons>
 						<button @click=cancel> "CANCEL"
-						<button @click=next> "NEXT"
+						<button @hotkey('right') @click=next> "NEXT"
 						<button @click=prev> "PREV"
 						<button @click=again> "AGAIN"
 
 				<%current>
-					css fs:100px
+					css fs:100px ta:center
 					display-current
 
 				<%timer>
@@ -209,20 +236,20 @@ tag app
 
 				if editing?
 					<textarea bind=state>
-						css s:500px
+						css s:500px bg:clear c:warm2 p:3 rd:3 ol:none bd:1px dashed blue4
 
 				else
 					<%container>
-						css p:15px bd:1px solid blue4 rd:4 h:200px of:auto
+						css bd:1px solid blue4 rd:4 s:500px of:auto
 
 						<%lines>
-							css d:vcl g:10px
+							css d:vcl
 
-							for line, i in data
-								<%line @click=play(i)> line
-									css cursor:default w:100%
-										@hover c:blue4
-									if current is line
+							for o, i in data
+								<%line @click=play(i)> o.text
+									css cursor:default w:100% px:15px py:10px
+										@hover bg:white/10
+									if o is current
 										css
 											@important c:green3
 
