@@ -14,7 +14,7 @@ tag app
 
 	setup-duration = 3s
 
-	raw = """
+	state = imba.locals.state or """
 	# Sitting
 	Hurdle Right 1m
 	Hurdle Left 1m
@@ -72,7 +72,7 @@ tag app
 	"""
 
 	get data
-		raw.split("\n").filter(do $1 and !$1.startsWith('#'))
+		state.split("\n").filter(do $1 and !$1.startsWith('#'))
 
 	get total-duration
 		let arr = (get-duration(line) for line in data)
@@ -111,6 +111,10 @@ tag app
 		unless /\ 1 \w+$/.test(text) then text += 's'
 		global.speechSynthesis.cancel!
 		global.speechSynthesis.speak(new SpeechSynthesisUtterance(text))
+
+	def save
+		imba.locals.state = state
+		editing? = no
 
 	def stop
 		index = 0
@@ -193,7 +197,10 @@ tag app
 			else
 				<.buttons>
 					<button @click=play(0)> "PLAY"
-					<button @click=(editing? ^= yes)> editing? ? "SAVE" : "EDIT"
+					if editing?
+						<button @click=save> "SAVE"
+					else
+						<button @click=(editing? = yes)> "EDIT"
 
 				<%total>
 					css d:hcc ws:pre
@@ -201,7 +208,7 @@ tag app
 					<div> " minutes"
 
 				if editing?
-					<textarea bind=raw>
+					<textarea bind=state>
 						css s:500px
 
 				else
