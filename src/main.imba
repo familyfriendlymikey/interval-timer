@@ -1,10 +1,33 @@
 global css
-	* e:300ms box-sizing:border-box
-	body c:warm2 bg:gray9 ff:Arial inset:0 d:vtl p:0 m:0
-	button bg:clear ol:none c:white px:8px py:5px rd:2
-		bd:none
-		@hover bg:blue4/70
-	.buttons d:hcc g:1
+	* box-sizing:border-box c:$text-c
+	body m:0 bd:0 p:0 bg:#20222f
+	.dark
+		$appbg:#20222f
+		$bodybg:#20222f
+		$selected-c:blue3/5
+		$bang-c:#fad4ab
+		$text-c:blue3
+		$input-bg:purple4/5
+		$input-c:blue3
+		$input-caret-c:blue3
+		$input-bc:purple4
+		$tip-hotkey-c:purple3/50
+		$tip-content-c:purple3
+		$tip-hover-c:purple3/3
+		$tip-bc:blue3/10
+		$button-c:purple3/90
+		$button-dim-c:purple3/50
+		$button-bg:purple4/10
+		$button-hover-bg:purple4/20
+	button
+		bg:clear bd:none fs:14px d:hcc fl:1 rd:5px
+		transition:background 100ms
+		h:100% px:5px
+		of:hidden text-overflow:ellipsis white-space:nowrap
+		bg:$button-bg c:$button-c
+		@hover bg:$button-hover-bg
+	.buttons
+		d:hcc w:100% h:50px mt:10px g:10px flex:none
 
 extend class Array
 	get sum
@@ -18,7 +41,7 @@ extend class String
 
 tag app
 
-	setup-duration = 1ms
+	setup-duration = 3s
 
 	@observable state = imba.locals.state or """
 	# Sitting
@@ -130,9 +153,17 @@ tag app
 		global.speechSynthesis.cancel!
 		setTimeout(&,100ms) do global.speechSynthesis.speak(new SpeechSynthesisUtterance(text))
 
-	def save
+	def cancel-edit
+		editing? = no
+
+	def save-edit
+		state = newstate
 		imba.locals.state = state
 		editing? = no
+
+	def edit
+		newstate = state
+		editing? = yes
 
 	def stop
 		index = 0
@@ -195,11 +226,21 @@ tag app
 
 		stop!
 
-	<self autorender=100ms>
-		css d:vcc s:100%
+	<self.dark autorender=100ms>
+		css d:flex fld:column jc:start ai:center
+			m:0 w:100% h:100% bg:$bodybg
+			ff:sans-serif fw:1
+			us:none
+			e:100ms
+			@off o:0
 
-		<%top>
-			css d:vcc w:100% h:500px g:10px
+		<%main>
+			css d:flex fld:column jc:start ai:center
+				bg:$appbg
+				w:80vw max-width:700px mah:80vh
+				bxs:0px 0px 10px rgba(0,0,0,0.35)
+				box-sizing:border-box p:30px rd:10px mt:10vh
+				w:100% d:flex fld:column ofy:hidden gap:20px
 
 			if started
 
@@ -214,47 +255,44 @@ tag app
 						<button @click=again> "AGAIN"
 
 				<%current>
-					css fs:100px ta:center
+					css fs:100px ta:center fl:1 d:vcc
 					display-current
 
-				<%timer>
-					css fs:80px
-					started ? remaining : 0
+					<%timer>
+						css fs:80px
+						started ? remaining : 0
 
 			else
 				<.buttons>
-					<button @click=play(0)> "PLAY"
 					if editing?
-						<button @click=save> "SAVE"
+						<button @click=cancel-edit> "CANCEL"
+						<button @click=save-edit> "SAVE"
 					else
-						<button @click=(editing? = yes)> "EDIT"
+						<button @click=play(0)> "PLAY"
+						<button @click=edit> "EDIT"
 
 				<%total>
-					css d:hcc ws:pre
-					<div> total-duration
-					<div> " minutes"
+					css c:$tip-content-c
+					"{data.len} intervals, {total-duration} minutes total"
 
-				<div>
-					css s:500px maw:80%
-						> s:100%
+				if editing?
+					<textarea bind=newstate rows=1000>
+						css bg:clear p:3 rd:3 ol:none bd:1px dashed $input-bc s:100% bg:$input-bg resize:none
 
-					if editing?
-						<textarea bind=state>
-							css bg:clear c:warm2 p:3 rd:3 ol:none bd:1px dashed blue4
+				else
+					<%container>
+						css w:100% d:flex fld:column gap:15px ofy:hidden max-height:100%
 
-					else
-						<%container>
-							css bd:1px solid blue4 rd:4 of:auto
+						<div>
+							css ofy:auto
 
-							<%lines>
-								css d:vcl py:5px
+							for o, i in data
+								<%line @click=play(i)>
+									css d:flex fld:row jc:space-between ai:center
+										px:16px py:11px rd:5px c:$text-c
+										@hover bg:$selected-c
 
-								for o, i in data
-									<%line @click=play(i)> o.text
-										css cursor:default w:100% px:15px py:10px
-											@hover bg:white/10
-										if o is current
-											css
-												@important c:green3
+									<%left> o.text
+									<%right> o.duration
 
 imba.mount <app>
