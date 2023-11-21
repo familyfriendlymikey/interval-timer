@@ -247,7 +247,7 @@ tag app
 							css bd:1px solid blue4 rd:4 of:auto
 
 							<%lines>
-								css d:vcl
+								css d:vcl py:5px
 
 								for o, i in data
 									<%line @click=play(i)> o.text
