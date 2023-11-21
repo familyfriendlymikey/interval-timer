@@ -128,7 +128,7 @@ tag app
 
 	def speak text, o
 		global.speechSynthesis.cancel!
-		global.speechSynthesis.speak(new SpeechSynthesisUtterance(text))
+		setTimeout(&,100ms) do global.speechSynthesis.speak(new SpeechSynthesisUtterance(text))
 
 	def save
 		imba.locals.state = state
